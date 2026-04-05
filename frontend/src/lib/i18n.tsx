@@ -146,6 +146,9 @@ const translations: Record<Locale, Record<string, string>> = {
     issues_detected: "{count} проблем обнаружено",
     issue_detected: "{count} проблема обнаружена",
     cabin_related: "Связанные датчики",
+    cabin_ai_title: "ИИ-помощник",
+    cabin_ai_placeholder: "Спросите о локомотиве...",
+    cabin_ai_send: "Отправить",
 
     // Trends
     trends_title: "Тренды",
@@ -331,6 +334,9 @@ const translations: Record<Locale, Record<string, string>> = {
     issues_detected: "{count} мәселе анықталды",
     issue_detected: "{count} мәселе анықталды",
     cabin_related: "Байланысты сенсорлар",
+    cabin_ai_title: "ИИ-көмекші",
+    cabin_ai_placeholder: "Локомотив туралы сұраңыз...",
+    cabin_ai_send: "Жіберу",
 
     // Trends
     trends_title: "Трендтер",

@@ -106,7 +106,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "traction_motor_temp_c": {
                     "unit": "°C",
-                    "safe_low": 20, "safe_high": 120,
+                    "safe_low": 20, "safe_high": 105,
                     "warn_low": 10, "warn_high": 140,
                     "crit_low": 0, "crit_high": 155,
                     "weight": 0.10,
@@ -114,7 +114,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "dc_bus_voltage_v": {
                     "unit": "V",
-                    "safe_low": 1620, "safe_high": 1980,
+                    "safe_low": 1720, "safe_high": 1880,
                     "warn_low": 1530, "warn_high": 2070,
                     "crit_low": 1440, "crit_high": 2160,
                     "weight": 0.05,
@@ -122,7 +122,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "wheel_slip_pct": {
                     "unit": "%",
-                    "safe_low": 0, "safe_high": 2,
+                    "safe_low": 0, "safe_high": 1.2,
                     "warn_low": 0, "warn_high": 5,
                     "crit_low": 0, "crit_high": 10,
                     "weight": 0.05,
@@ -135,7 +135,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
             "parameters": {
                 "catenary_voltage_kv": {
                     "unit": "kV",
-                    "safe_low": 22.5, "safe_high": 27.5,
+                    "safe_low": 23.5, "safe_high": 26.5,
                     "warn_low": 19, "warn_high": 29,
                     "crit_low": 17, "crit_high": 31,
                     "weight": 0.08,
@@ -143,7 +143,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "onboard_voltage_v": {
                     "unit": "V",
-                    "safe_low": 380, "safe_high": 420,
+                    "safe_low": 385, "safe_high": 415,
                     "warn_low": 360, "warn_high": 440,
                     "crit_low": 340, "crit_high": 460,
                     "weight": 0.05,
@@ -151,7 +151,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "battery_voltage_v": {
                     "unit": "V",
-                    "safe_low": 100, "safe_high": 130,
+                    "safe_low": 103, "safe_high": 120,
                     "warn_low": 90, "warn_high": 135,
                     "crit_low": 80, "crit_high": 140,
                     "weight": 0.05,
@@ -209,7 +209,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
             "parameters": {
                 "coolant_temp_c": {
                     "unit": "°C",
-                    "safe_low": 60, "safe_high": 85,
+                    "safe_low": 63, "safe_high": 84,
                     "warn_low": 50, "warn_high": 95,
                     "crit_low": 40, "crit_high": 105,
                     "weight": 0.05,
@@ -217,7 +217,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
                 },
                 "oil_temp_c": {
                     "unit": "°C",
-                    "safe_low": 60, "safe_high": 95,
+                    "safe_low": 63, "safe_high": 90,
                     "warn_low": 50, "warn_high": 105,
                     "crit_low": 40, "crit_high": 115,
                     "weight": 0.05,
@@ -230,7 +230,7 @@ INSERT INTO loco_config (loco_type, config) VALUES
             "parameters": {
                 "speed_kmh": {
                     "unit": "km/h",
-                    "safe_low": 0, "safe_high": 115,
+                    "safe_low": 0, "safe_high": 100,
                     "warn_low": 0, "warn_high": 120,
                     "crit_low": 0, "crit_high": 130,
                     "weight": 0.05,

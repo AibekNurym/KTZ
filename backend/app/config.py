@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
+    # AI Assistant
+    openai_api_key: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"

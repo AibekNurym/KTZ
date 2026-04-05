@@ -10,9 +10,11 @@ import { ConnectionStatus } from "@/components/connection-status";
 import {
   Train, LogOut, AlertTriangle, Gauge, Thermometer, Wind,
   Zap, Droplets, Activity, Battery, Fuel, RotateCw, X, MapPin,
+  Bot, Send, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale, PARAM_KEY_MAP } from "@/lib/i18n";
+import { apiFetch } from "@/lib/api";
 
 /* ═══ Leaflet dynamic imports (no SSR) ═══ */
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
@@ -569,6 +571,109 @@ function CardTabsModal({
   );
 }
 
+/* ═══ AI Chat Panel ═══ */
+
+interface ChatMsg { role: "user" | "assistant"; text: string }
+
+function AIChatPanel({ locoId, onClose }: { locoId: string; onClose: () => void }) {
+  const { t } = useLocale();
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useMemo(() => ({ current: null as HTMLDivElement | null }), []);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text }]);
+    setLoading(true);
+    try {
+      const res = await apiFetch<{ reply: string }>("/api/v1/ai/chat", {
+        method: "POST",
+        body: JSON.stringify({ message: text, loco_id: locoId }),
+      });
+      setMessages((prev) => [...prev, { role: "assistant", text: res.reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", text: "Ошибка связи с ИИ." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, scrollRef]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-end p-5" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-zinc-900 border border-zinc-700 rounded-2xl w-[420px] max-w-[95vw] h-[70vh] max-h-[600px] flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-teal-400" />
+            <h3 className="text-sm font-semibold">{t("cabin_ai_title")}</h3>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div ref={(el) => { scrollRef.current = el; }} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          {messages.length === 0 && (
+            <p className="text-sm text-zinc-500 text-center mt-8">
+              {t("cabin_ai_placeholder")}
+            </p>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                msg.role === "user"
+                  ? "bg-teal-600 text-white"
+                  : "bg-zinc-800 text-zinc-200"
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-zinc-800 text-zinc-400 px-3 py-2 rounded-xl text-sm flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="px-4 py-3 border-t border-zinc-800 shrink-0">
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+              placeholder={t("cabin_ai_placeholder")}
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-teal-500/50"
+            />
+            <button
+              onClick={send}
+              disabled={loading || !input.trim()}
+              className="bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white rounded-lg px-3 py-2 transition-colors"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══ Page ═══ */
 
 export default function CabinPage() {
@@ -578,6 +683,7 @@ export default function CabinPage() {
   const { healthIndex, parameters, locoId, connectionStatus } = useTelemetryStore();
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [geoData, setGeoData] = useState<GeoData | null>(null);
   const [positionProgress, setPositionProgress] = useState(0.3);
   useWebSocket();
@@ -646,6 +752,11 @@ export default function CabinPage() {
         <div className="flex items-center gap-4">
           <Clock />
           <ConnectionStatus />
+          <Button variant="ghost" size="sm"
+            onClick={() => setChatOpen(true)}
+            className="h-8 w-8 p-0 text-zinc-400 hover:text-teal-400">
+            <Bot className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="sm"
             onClick={() => setLocale(locale === "ru" ? "kk" : "ru")}
             className="h-8 px-2 text-sm font-medium text-zinc-400 hover:text-zinc-100">
@@ -736,6 +847,9 @@ export default function CabinPage() {
           onClose={() => setActiveTab(null)}
         />
       )}
+
+      {/* ═══ AI CHAT ═══ */}
+      {chatOpen && <AIChatPanel locoId={locoId} onClose={() => setChatOpen(false)} />}
 
       {/* ═══ MAP MODAL ═══ */}
       {mapOpen && (

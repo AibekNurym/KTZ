@@ -20,6 +20,7 @@ from app.ws.manager import get_connection_count
 from app.api.simulator import router as simulator_router
 from app.api.export import router as export_router
 from app.api.users import router as users_router
+from app.api.ai_chat import router as ai_chat_router
 
 setup_logging()
 logger = structlog.get_logger(component="main")
@@ -51,6 +52,7 @@ app.include_router(ws_router)
 app.include_router(simulator_router)
 app.include_router(export_router)
 app.include_router(users_router)
+app.include_router(ai_chat_router)
 
 redis_client: aioredis.Redis | None = None
 _background_tasks: list[asyncio.Task] = []
