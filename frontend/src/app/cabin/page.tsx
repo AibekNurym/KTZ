@@ -263,7 +263,7 @@ function CabinGauge({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-4xl font-bold tabular-nums font-mono" style={{ color }}>{score.toFixed(1)}</span>
-        <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 mt-1">{t("health_index")}</span>
+        <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mt-1">{t("health_index")}</span>
         <span className="mt-1.5 text-xs font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full"
           style={{ color, backgroundColor: `${color}15` }}>{label}</span>
       </div>
