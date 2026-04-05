@@ -1,0 +1,14 @@
+name: overheat
+description: "Gradual engine/motor overheat over 2 minutes"
+duration_sec: 120
+type: drift
+parameters:
+  traction_motor_temp_c:
+    target: 170
+    rate_per_sec: 1.2
+  coolant_temp_c:
+    target: 120
+    rate_per_sec: 0.5
+  oil_temp_c:
+    target: 130
+    rate_per_sec: 0.5

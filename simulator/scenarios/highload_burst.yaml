@@ -1,0 +1,6 @@
+name: highload_burst
+description: "Message rate increases to 10Hz for 30 seconds"
+duration_sec: 30
+type: burst
+burst_hz: 10
+parameters: {}

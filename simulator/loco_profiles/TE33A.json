@@ -1,0 +1,25 @@
+{
+  "loco_type": "TE33A",
+  "loco_id": "TE33A-001",
+  "name": "TE33A Diesel-Electric Locomotive",
+  "parameters": {
+    "coolant_temp_c": { "unit": "°C", "nominal": 88, "sigma": 2, "min": 0, "max": 140 },
+    "oil_temp_c": { "unit": "°C", "nominal": 97, "sigma": 2, "min": 0, "max": 150 },
+    "oil_pressure_kpa": { "unit": "kPa", "nominal": 345, "sigma": 10, "min": 0, "max": 550 },
+    "engine_rpm": { "unit": "RPM", "nominal": 750, "sigma": 20, "min": 0, "max": 1300 },
+    "exhaust_temp_c": { "unit": "°C", "nominal": 400, "sigma": 15, "min": 0, "max": 700 },
+    "fuel_level_pct": { "unit": "%", "nominal": 75, "sigma": 0.1, "min": 0, "max": 100 },
+    "fuel_consumption_g_kwh": { "unit": "g/kWh", "nominal": 192, "sigma": 5, "min": 0, "max": 350 },
+    "traction_motor_current_a": { "unit": "A", "nominal": 500, "sigma": 40, "min": 0, "max": 1300 },
+    "traction_motor_temp_c": { "unit": "°C", "nominal": 85, "sigma": 5, "min": 0, "max": 200 },
+    "wheel_slip_pct": { "unit": "%", "nominal": 0.5, "sigma": 0.3, "min": 0, "max": 15 },
+    "brake_main_pressure_bar": { "unit": "bar", "nominal": 5.2, "sigma": 0.15, "min": 0, "max": 8 },
+    "brake_reservoir_pressure_bar": { "unit": "bar", "nominal": 8.8, "sigma": 0.1, "min": 0, "max": 12 },
+    "brake_cylinder_pressure_bar": { "unit": "bar", "nominal": 0.5, "sigma": 0.2, "min": 0, "max": 6 },
+    "regen_braking_power_kw": { "unit": "kW", "nominal": 1500, "sigma": 100, "min": 0, "max": 4000 },
+    "speed_kmh": { "unit": "km/h", "nominal": 60, "sigma": 5, "min": 0, "max": 150 },
+    "ambient_temp_c": { "unit": "°C", "nominal": 20, "sigma": 1, "min": -55, "max": 60 },
+    "dc_bus_voltage_v": { "unit": "V", "nominal": 1050, "sigma": 15, "min": 0, "max": 1600 },
+    "oil_pressure_idle_kpa": { "unit": "kPa", "nominal": 155, "sigma": 10, "min": 0, "max": 350 }
+  }
+}

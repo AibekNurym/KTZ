@@ -1,0 +1,15 @@
+name: electrical_fault
+description: "Sudden electrical failure — voltage drops instantly"
+duration_sec: 60
+type: step
+parameters:
+  catenary_voltage_kv:
+    target: 0
+  dc_bus_voltage_v:
+    target: 200
+  onboard_voltage_v:
+    target: 150
+  battery_voltage_v:
+    target: 85
+  pantograph_current_a:
+    target: 0

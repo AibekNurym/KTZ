@@ -1,0 +1,23 @@
+{
+  "loco_type": "KZ8A",
+  "loco_id": "KZ8A-001",
+  "name": "KZ8A Electric Locomotive",
+  "parameters": {
+    "traction_motor_current_a": { "unit": "A", "nominal": 600, "sigma": 50, "min": 0, "max": 1500 },
+    "traction_motor_temp_c": { "unit": "°C", "nominal": 85, "sigma": 5, "min": 0, "max": 200 },
+    "dc_bus_voltage_v": { "unit": "V", "nominal": 1800, "sigma": 20, "min": 0, "max": 2500 },
+    "wheel_slip_pct": { "unit": "%", "nominal": 0.5, "sigma": 0.3, "min": 0, "max": 15 },
+    "catenary_voltage_kv": { "unit": "kV", "nominal": 25.0, "sigma": 0.5, "min": 0, "max": 35 },
+    "onboard_voltage_v": { "unit": "V", "nominal": 400, "sigma": 5, "min": 0, "max": 500 },
+    "battery_voltage_v": { "unit": "V", "nominal": 110, "sigma": 2, "min": 0, "max": 150 },
+    "pantograph_current_a": { "unit": "A", "nominal": 300, "sigma": 30, "min": 0, "max": 800 },
+    "brake_main_pressure_bar": { "unit": "bar", "nominal": 5.2, "sigma": 0.15, "min": 0, "max": 8 },
+    "brake_reservoir_pressure_bar": { "unit": "bar", "nominal": 8.8, "sigma": 0.1, "min": 0, "max": 12 },
+    "brake_cylinder_pressure_bar": { "unit": "bar", "nominal": 0.5, "sigma": 0.2, "min": 0, "max": 6 },
+    "regen_braking_power_kw": { "unit": "kW", "nominal": 3000, "sigma": 200, "min": 0, "max": 9000 },
+    "coolant_temp_c": { "unit": "°C", "nominal": 75, "sigma": 3, "min": 0, "max": 130 },
+    "oil_temp_c": { "unit": "°C", "nominal": 80, "sigma": 3, "min": 0, "max": 140 },
+    "speed_kmh": { "unit": "km/h", "nominal": 70, "sigma": 5, "min": 0, "max": 150 },
+    "ambient_temp_c": { "unit": "°C", "nominal": 20, "sigma": 1, "min": -55, "max": 55 }
+  }
+}

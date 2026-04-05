@@ -1,0 +1,5 @@
+name: connection_loss
+description: "Simulator stops sending for 10-15 seconds"
+duration_sec: 12
+type: silence
+parameters: {}

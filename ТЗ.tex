@@ -1,0 +1,1173 @@
+\documentclass[12pt,a4paper]{article}
+
+% ---- Кириллица / шрифты ----
+\usepackage{fontspec}
+\setmainfont{Times New Roman}[
+  BoldFont = Times New Roman Bold,
+  ItalicFont = Times New Roman Italic,
+  BoldItalicFont = Times New Roman Bold Italic
+]
+\setmonofont{Menlo}[Script=Default]
+\usepackage{polyglossia}
+\setdefaultlanguage{russian}
+\setotherlanguage{english}
+\newfontfamily\cyrillicfonttt{Menlo}[Script=Default]
+
+% ---- Геометрия ----
+\usepackage[left=25mm, right=15mm, top=20mm, bottom=20mm]{geometry}
+
+% ---- Таблицы, списки, цвета ----
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+% ---- Ссылки, оглавление ----
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  urlcolor=blue!70!black,
+  citecolor=blue!70!black,
+  pdfauthor={KTZ Hackathon Team},
+  pdftitle={ТЗ: Цифровой двойник локомотива v2.0}
+}
+\usepackage{titlesec}
+
+% ---- Математика ----
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ---- Код ----
+\usepackage{listings}
+\lstset{
+  basicstyle=\small\ttfamily,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  rulecolor=\color{gray!40},
+  xleftmargin=2em,
+  framexleftmargin=1.5em,
+  numbers=none,
+  tabsize=2
+}
+
+% ---- Колонтитулы ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{ТЗ: Цифровой двойник локомотива v2.0}}
+\fancyhead[R]{\small\textit{Хакатон КТЖ 2026}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---- Цвета для статусов ----
+\definecolor{statusgreen}{HTML}{22C55E}
+\definecolor{statusyellow}{HTML}{EAB308}
+\definecolor{statusred}{HTML}{EF4444}
+\definecolor{sectionblue}{HTML}{1E40AF}
+
+% ---- Форматирование секций ----
+\titleformat{\section}{\Large\bfseries\color{sectionblue}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% ---- Утилиты ----
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\warn}[1]{\textcolor{statusred}{\textbf{#1}}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+
+% =========================================================================
+%  ТИТУЛЬНАЯ СТРАНИЦА
+% =========================================================================
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+{\Huge\bfseries ТЕХНИЧЕСКОЕ ЗАДАНИЕ\par}
+\vspace{0.8cm}
+{\LARGE Проект <<Цифровой двойник локомотива>>\par}
+\vspace{0.4cm}
+{\LARGE для хакатона КТЖ\par}
+\vspace{2cm}
+{\Large Версия 2.0\par}
+\vspace{0.5cm}
+{\large 04.04.2026\par}
+
+\vfill
+
+\begin{tabular}{ll}
+\toprule
+\textbf{Параметр} & \textbf{Значение} \\
+\midrule
+Заказчик & Хакатон КТЖ \\
+Назначение & Рабочее ТЗ для команды разработки \\
+Локомотивы & KZ8A (электровоз), ТЭ33А (тепловоз) \\
+Стек & React + Next.js / FastAPI / TimescaleDB / Redis \\
+Источник логики & \code{Locomotive\_Metrics\_Reference.md} \\
+\bottomrule
+\end{tabular}
+
+\vspace{1.5cm}
+{\small Документ фиксирует архитектурные, функциональные и нефункциональные требования.\\ Во всех местах, не определённых заказчиком жёстко, выбран наиболее подходящий инженерный вариант.}
+\end{titlepage}
+
+% =========================================================================
+%  ОГЛАВЛЕНИЕ
+% =========================================================================
+\tableofcontents
+\newpage
+
+% =========================================================================
+%  1. ОБЩАЯ ЦЕЛЬ ПРОЕКТА
+% =========================================================================
+\section{Общая цель проекта}
+
+Разработать \textbf{production-like full-stack прототип} веб-приложения <<Цифровой двойник локомотива>>, которое в режиме, приближённом к реальному времени:
+
+\begin{itemize}[nosep]
+  \item принимает поток телеметрии от бортовых систем локомотива;
+  \item рассчитывает интегральный \textbf{Health Index} (0--100) с объяснимостью (top-5 факторов);
+  \item выявляет опасные отклонения и формирует алерты с рекомендациями;
+  \item предоставляет машинисту, диспетчеру и администратору понятный интерфейс мониторинга, диагностики и анализа.
+\end{itemize}
+
+\textbf{Основной приоритет} --- безопасность локомотива, безопасность движения и снижение риска для окружающей среды.
+
+При распределении усилий команда должна ориентироваться на \textbf{весовые критерии оценки} (см.~раздел~\ref{sec:criteria}): наибольший вес имеет работа в реальном времени (35\,\%) и дизайн интерфейса (30\,\%).
+
+
+% =========================================================================
+%  2. КОНТЕКСТ И ИСХОДНЫЕ ПРЕДПОСЫЛКИ
+% =========================================================================
+\section{Контекст и исходные предпосылки}
+
+Реальные производственные данные КТЖ команде \textbf{недоступны}. Решение реализуется как реалистичный демонстрационный прототип, в котором бортовой источник заменяется \emph{lightweight simulator service}.
+
+Демонстрационный пайплайн:
+
+\begin{center}
+\fbox{Simulator} $\;\longrightarrow\;$ \fbox{Redis Queue} $\;\longrightarrow\;$ \fbox{FastAPI Backend} $\;\longrightarrow\;$ \fbox{TimescaleDB} $\;\longrightarrow\;$ \fbox{WebSocket} $\;\longrightarrow\;$ \fbox{Next.js Frontend}
+\end{center}
+
+Все технические характеристики локомотивов и логика оценки параметров берутся из файла \code{Locomotive\_Metrics\_Reference.md}.
+
+\subsection{Критерии соответствия безопасности}
+\begin{itemize}[nosep]
+  \item Не использовать реальные коммерческие данные без согласования.
+  \item Обезличивание в примерах; mock-данные по умолчанию.
+  \item Конфигурационные секреты --- \textbf{только через переменные окружения} (ENV).
+\end{itemize}
+
+
+% =========================================================================
+%  3. КРИТЕРИИ ОЦЕНКИ ХАКАТОНА
+% =========================================================================
+\section{Критерии оценки хакатона}
+\label{sec:criteria}
+
+\begin{tabularx}{\textwidth}{C{0.6cm} L{3.8cm} C{1.2cm} X}
+\toprule
+\textbf{\#} & \textbf{Критерий} & \textbf{Вес} & \textbf{Что оценивается} \\
+\midrule
+1 & Дизайн интерфейса (UI/UX) & 30\,\% & Читабельность, приоритизация сигналов, информативные визуализации, accessibility, темизация. \\
+\addlinespace
+2 & Работа в реальном времени & 35\,\% & WebSocket/SSE, стабильность под нагрузкой, задержки, отказоустойчивость клиента и сервера. \\
+\addlinespace
+3 & Архитектура backend & 25\,\% & Чистая модульность, масштабируемость, хранение истории, прозрачность индекса здоровья. \\
+\addlinespace
+4 & Демонстрация и инженерная культура & 10\,\% & Чистота репозитория, инструкции запуска, логи/метрики, тестовый сценарий. \\
+\bottomrule
+\end{tabularx}
+
+
+% =========================================================================
+%  4. ПОДДЕРЖИВАЕМЫЕ ТИПЫ ЛОКОМОТИВОВ
+% =========================================================================
+\section{Поддерживаемые типы локомотивов}
+
+Система обязана поддерживать \textbf{два типа} локомотивов:
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Тип} & \textbf{Тяга} & \textbf{Особенности} \\
+\midrule
+KZ8A & Электровоз & Переменный ток 25 кВ, тяговые двигатели, рекуперативное торможение \\
+ТЭ33А & Тепловоз & Дизель-электрическая, дизельный двигатель + генератор, расход топлива \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5em}
+Для каждого типа существует \textbf{отдельный конфигурационный профиль}: список параметров, единицы измерения, безопасные/предупредительные/критические диапазоны, группировка по подсистемам, веса подсистем. Переключение типа локомотива \textbf{не требует изменения кода} --- используется конфигурационный подход.
+
+Конкретные значения параметров и диапазонов~--- \textit{см.\,\code{Locomotive\_Metrics\_Reference.md}}.
+
+
+% =========================================================================
+%  5. СТЕК И ТЕХНИЧЕСКИЕ РЕШЕНИЯ
+% =========================================================================
+\section{Стек и принятые технические решения}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Слой} & \textbf{Технология} & \textbf{Комментарий} \\
+\midrule
+Frontend & React + Next.js & App Router, TypeScript, SSR для начального рендера \\
+UI & Tailwind CSS + shadcn/ui & Быстрый стек с поддержкой темизации \\
+Charts & ECharts & Высокопроизводительные интерактивные графики \\
+Maps & Leaflet / MapLibre & Карта маршрута с маркерами и оверлеями \\
+Backend & FastAPI (async) & Python 3.11+, асинхронные endpoints и WebSocket \\
+Очередь & Redis / asyncio.Queue & Шина событий, буферизация потока телеметрии \\
+Database & TimescaleDB & PostgreSQL + расширение для time-series, hypertables \\
+Realtime & WebSocket (SSE fallback) & Поток обновлений backend $\to$ frontend \\
+Infra & Docker Compose & Единый способ запуска всех сервисов \\
+API Docs & OpenAPI / Swagger & Авто-генерация на \code{/docs} \\
+Logging & structlog (JSON) & Структурированные логи, trace\_id \\
+\bottomrule
+\end{tabularx}
+
+
+% =========================================================================
+%  6. РОЛИ И АУТЕНТИФИКАЦИЯ
+% =========================================================================
+\section{Пользовательские роли и аутентификация}
+
+\subsection{Роли}
+
+\begin{tabularx}{\textwidth}{l X l}
+\toprule
+\textbf{Роль} & \textbf{Описание} & \textbf{Доступ к настройкам} \\
+\midrule
+Admin & Управление конфигурацией, порогами, сценарием симуляции, пользователями. Полный доступ ко всем экранам + панель администрирования. & Полный \\
+\addlinespace
+Dispatcher & Основной режим мониторинга: dashboard, alerts, trends, replay/history, export. Не может изменять пороги. & Только чтение \\
+\addlinespace
+Cabin mode & Упрощённый UI-режим для машиниста. Крупный Health Index, только ключевые показатели, высокий контраст. & Нет доступа \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Аутентификация и авторизация}
+
+\begin{itemize}[nosep]
+  \item \textbf{Механизм:} JWT-аутентификация (JSON Web Token).
+  \item \textbf{Login screen:} форма с полями username/password.
+  \item \textbf{Демо-пользователи:} предзаданные учётные записи в переменных окружения (\code{.env}):
+    \begin{itemize}[nosep]
+      \item \code{admin / admin123} --- роль Admin
+      \item \code{dispatcher / disp123} --- роль Dispatcher
+      \item \code{cabin / cabin123} --- роль Cabin
+    \end{itemize}
+  \item \textbf{Защита маршрутов:} frontend проверяет роль перед рендером; backend --- middleware на каждом endpoint.
+  \item \textbf{Ограничение доступа:} Admin-only endpoints возвращают \code{403 Forbidden} для других ролей.
+\end{itemize}
+
+
+% =========================================================================
+%  7. ФУНКЦИОНАЛЬНЫЕ ТРЕБОВАНИЯ
+% =========================================================================
+\section{Функциональные требования}
+
+\subsection{Обязательные экраны MVP}
+
+Login Page, Main Dashboard, Alerts Panel, Trends / Charts, Subsystem Cards, Карта маршрута, Replay / History, Report Export, Admin Settings.
+
+\subsection{Login Page}
+
+Центрированная карточка: логотип, поля username и password, кнопка <<Войти>>. При ошибке --- toast-уведомление. Автоматический редирект при наличии валидного токена.
+
+\subsection{Main Dashboard}
+\label{sec:dashboard}
+
+\begin{itemize}[nosep]
+  \item \textbf{Health Index виджет} --- крупный круговой индикатор (0--100), цветовая индикация статуса (Normal / Attention / Critical), текстовая подпись.
+  \item \textbf{Top-5 факторов ухудшения} --- список параметров с наибольшим вкладом в снижение индекса. Для каждого: название, подсистема, текущее значение vs порог, полоса вклада.
+  \item \textbf{Панель алертов} --- последние 10 алертов, иконка severity + время + сообщение, прокрутка.
+  \item \textbf{Рекомендуемые действия} --- текстовый список, формируемый на основе активных алертов.
+  \item \textbf{Панели ключевых узлов}:
+    \begin{itemize}[nosep]
+      \item \textbf{Скорость} --- текущая, предел, мини-график.
+      \item \textbf{Топливо / Энергия} --- уровень/расход, тренд.
+      \item \textbf{Давления / Температуры} --- ключевые показатели с цветовой индикацией.
+      \item \textbf{Электрика} --- напряжение, ток, статус цепей.
+    \end{itemize}
+  \item \textbf{Селектор локомотива} --- выпадающий список (KZ8A / ТЭ33А).
+  \item Автообновление через WebSocket; визуальный индикатор <<нет связи>> при потере соединения.
+\end{itemize}
+
+\subsection{Alerts Panel}
+\label{sec:alerts}
+
+\begin{itemize}[nosep]
+  \item Таблица алертов: столбцы --- Время, Параметр, Severity (иконка + текст), Значение, Порог, Статус (new/acknowledged), Аннотация.
+  \item Фильтры: чекбоксы severity, диапазон времени, селектор локомотива.
+  \item Клик по строке --- разворачивает детали + поле для \textbf{отметки события} (аннотации): текстовое поле для ввода комментария к алерту/событию.
+  \item Кнопка <<Acknowledge>> для подтверждения прочтения алерта.
+  \item Пагинация.
+\end{itemize}
+
+\subsection{Карта маршрута / Схема пути}
+
+\begin{itemize}[nosep]
+  \item Упрощённая карта или схема участка пути (Leaflet/MapLibre).
+  \item Маркер текущего положения локомотива.
+  \item Наложение действующих скоростных ограничений (зоны на карте).
+  \item Цветовая кодировка сегментов маршрута по состоянию Health Index.
+  \item Overlay-панель: текущая скорость, координаты, ближайшая станция.
+  \item Маршрут задаётся через GeoJSON файл в конфигурации.
+\end{itemize}
+
+\subsection{Trends / Charts}
+
+\begin{itemize}[nosep]
+  \item Интерактивные графики по ключевым метрикам (ECharts).
+  \item Настраиваемое окно просмотра: 5, 10, 15 минут + произвольный диапазон.
+  \item Tooltip с точными значениями, авто-скейлинг оси Y.
+  \item Zoom (drag-select), pan, overlay нескольких метрик.
+  \item Корректная работа с потоком данных от 1\,Гц и выше.
+  \item Автообновление в реальном времени с возможностью паузы.
+\end{itemize}
+
+\subsection{Replay / History}
+
+\begin{itemize}[nosep]
+  \item Выбор временного диапазона (последние 5--15 минут).
+  \item Timeline-скраббер (полоса перемотки) с кнопками Play / Pause.
+  \item Управление скоростью воспроизведения: 1$\times$, 2$\times$, 5$\times$.
+  \item \textbf{Синхронное обновление} всех компонентов: графики, Health Index, алерты, карта пути --- привязаны к позиции скраббера.
+\end{itemize}
+
+\subsection{Report Export}
+
+\begin{itemize}[nosep]
+  \item Экспорт мини-отчёта в формате \textbf{PDF} или \textbf{CSV}.
+  \item Содержание отчёта: временной диапазон, сводка Health Index (min/avg/max), список сработавших алертов, средние значения ключевых метрик.
+  \item Вызывается из экрана Replay или Dashboard.
+\end{itemize}
+
+\subsection{Admin Settings (только роль Admin)}
+
+\begin{itemize}[nosep]
+  \item Интерфейс с вкладками:
+    \begin{itemize}[nosep]
+      \item \textbf{Пороги} --- таблица по типу локомотива: параметр, safe\_low, safe\_high, warn\_low, warn\_high, crit\_low, crit\_high, weight. Инлайн-редактирование.
+      \item \textbf{Симуляция} --- кнопки Start/Stop, выпадающий список сценариев, индикатор статуса.
+      \item \textbf{Пользователи} --- простая CRUD-таблица (username, role, сброс пароля).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Адаптивность и доступность}
+
+\begin{itemize}[nosep]
+  \item Адаптивная вёрстка: корректное отображение на мониторах и ноутбуках различных разрешений.
+  \item Обязательна \textbf{светлая и тёмная тема} с переключателем в header.
+  \item Accessibility (WCAG~AA): достаточный контраст, читабельный размер шрифта, текстовые tooltips на всех иконках, навигация клавиатурой для критичных элементов.
+\end{itemize}
+
+
+% =========================================================================
+%  8. АРХИТЕКТУРА СИСТЕМЫ
+% =========================================================================
+\section{Архитектура системы}
+
+\subsection{Компоненты}
+
+\subsubsection*{Simulator Service}
+Отдельный Python-процесс (или контейнер), генерирующий телеметрию для KZ8A и ТЭ33А. Поддерживает нормальные и аварийные сценарии. Публикует JSON-сообщения в Redis Queue с частотой 1\,Гц на локомотив.
+
+\subsubsection*{Шина событий (Redis / asyncio.Queue)}
+Легковесная очередь, отвязывающая simulator от backend. Буферизирует входящий поток для защиты от всплесков нагрузки. Гарантирует порядок FIFO.
+
+\subsubsection*{FastAPI Backend}
+\begin{itemize}[nosep]
+  \item Ingest worker: забирает сообщения из очереди, валидирует, нормализует, сглаживает.
+  \item Health Index Engine: пересчитывает индекс на каждый тик.
+  \item Alert Generator: проверяет пороги, создаёт алерты.
+  \item REST API: исторические данные, конфигурация, экспорт.
+  \item WebSocket Server: раздаёт live-обновления подключённым клиентам.
+\end{itemize}
+
+\subsubsection*{TimescaleDB}
+PostgreSQL с расширением TimescaleDB. Хранение time-series телеметрии (hypertable), истории Health Index, алертов, конфигураций, пользователей. Retention policy 24--72 часа.
+
+\subsubsection*{Next.js Frontend}
+SPA на App Router + TypeScript. WebSocket-клиент с логикой переподключения. State management: React Context или Zustand. Рендеринг графиков через ECharts, карты через Leaflet.
+
+\subsection{Архитектурная диаграмма}
+\label{sec:arch-diagram}
+
+В репозитории должна присутствовать архитектурная диаграмма (\code{docs/architecture.png} или \code{.svg}), отображающая:
+
+\begin{itemize}[nosep]
+  \item Все компоненты системы в рамках Docker Compose.
+  \item Потоки данных: Simulator $\to$ Redis $\to$ FastAPI $\to$ TimescaleDB.
+  \item Push-поток: FastAPI (WebSocket) $\to$ Browser.
+  \item Pull-поток: Browser $\to$ FastAPI (REST) $\to$ TimescaleDB.
+  \item Открытые порты (frontend: 3000, backend: 8000, DB: 5432).
+\end{itemize}
+
+\subsection{Логи, метрики, health-check}
+
+\begin{itemize}[nosep]
+  \item \textbf{Логи:} все backend-сервисы используют \code{structlog} (Python) для структурированных JSON-логов. Поля: \code{timestamp}, \code{level}, \code{component}, \code{message}, \code{trace\_id}.
+  \item \textbf{Уровни логирования:} DEBUG (dev), INFO (prod по умолчанию), WARNING, ERROR.
+  \item \textbf{Health-check endpoint:} \code{GET /health} --- возвращает статус сервиса, связность с БД, глубину очереди, uptime.
+  \item \textbf{Метрики:} активные WebSocket-соединения, сообщений/сек (обработано), глубина очереди, время вычисления HI.
+\end{itemize}
+
+
+% =========================================================================
+%  9. ОБРАБОТКА И ХРАНЕНИЕ ДАННЫХ
+% =========================================================================
+\section{Обработка и хранение данных}
+
+\subsection{Data Pipeline}
+
+Пошаговый поток обработки данных:
+
+\begin{enumerate}[nosep]
+  \item Simulator генерирует JSON-сообщение (\code{loco\_id}, \code{loco\_type}, \code{ts}, \code{parameters}).
+  \item Сообщение помещается в Redis Queue (или asyncio.Queue).
+  \item Ingest worker извлекает сообщение из очереди.
+  \item \textbf{Валидация:} проверка обязательных полей, типов значений, формата timestamp.
+  \item \textbf{Дедупликация:} отбрасываются сообщения с дублирующим \code{(loco\_id, ts)}.
+  \item \textbf{Фильтрация выбросов:} значения за пределами физически возможного диапазона отвергаются (диапазоны настраиваются per parameter).
+  \item \textbf{Обработка missing values:} forward-fill последним известным значением (максимум 5\,с, далее NaN).
+  \item \textbf{Сглаживание:} EMA ($\alpha = 0.3$) или медианный фильтр (окно = 5). Выбирается per parameter в конфигурации.
+  \item Запись raw + smoothed значений в \code{telemetry\_raw} (TimescaleDB).
+  \item Триггер пересчёта Health Index $\to$ запись в \code{health\_index\_history} $\to$ push через WebSocket.
+\end{enumerate}
+
+\subsection{Схема TimescaleDB}
+\label{sec:db-schema}
+
+\subsubsection*{Таблица \code{telemetry\_raw} (hypertable)}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Поле} & \textbf{Тип} & \textbf{Описание} \\
+\midrule
+\code{ts} & \code{TIMESTAMPTZ NOT NULL} & Временная метка (partition key) \\
+\code{loco\_id} & \code{VARCHAR(32) NOT NULL} & Идентификатор локомотива \\
+\code{loco\_type} & \code{VARCHAR(16) NOT NULL} & Тип: KZ8A \textbar{} TE33A \\
+\code{parameter} & \code{VARCHAR(64) NOT NULL} & Название параметра \\
+\code{value\_raw} & \code{DOUBLE PRECISION} & Сырое значение \\
+\code{value\_smooth} & \code{DOUBLE PRECISION} & Сглаженное значение (EMA / медиана) \\
+\code{unit} & \code{VARCHAR(16)} & Единица измерения \\
+\code{quality} & \code{SMALLINT DEFAULT 0} & 0 = ok, 1 = interpolated, 2 = outlier \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.3em}
+\noindent Chunk interval: 1 час. Retention policy: 72 часа (\code{drop\_chunks}).\\
+Индекс: \code{(loco\_id, parameter, ts DESC)}.
+
+\subsubsection*{Таблица \code{health\_index\_history} (hypertable)}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Поле} & \textbf{Тип} & \textbf{Описание} \\
+\midrule
+\code{ts} & \code{TIMESTAMPTZ NOT NULL} & Временная метка \\
+\code{loco\_id} & \code{VARCHAR(32) NOT NULL} & Идентификатор локомотива \\
+\code{score} & \code{DOUBLE PRECISION NOT NULL} & Значение HI (0--100) \\
+\code{status} & \code{VARCHAR(16) NOT NULL} & Normal \textbar{} Attention \textbar{} Critical \\
+\code{top\_factors} & \code{JSONB} & Массив top-5 факторов \\
+\code{subsystem\_scores} & \code{JSONB} & Оценки подсистем \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.3em}
+\noindent Chunk interval: 1 час. Retention: 72 часа.
+
+\subsubsection*{Таблица \code{alerts}}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Поле} & \textbf{Тип} & \textbf{Описание} \\
+\midrule
+\code{id} & \code{BIGSERIAL PK} & Автоинкремент ID \\
+\code{ts} & \code{TIMESTAMPTZ NOT NULL} & Время срабатывания \\
+\code{loco\_id} & \code{VARCHAR(32) NOT NULL} & Идентификатор локомотива \\
+\code{parameter} & \code{VARCHAR(64) NOT NULL} & Параметр, вызвавший алерт \\
+\code{severity} & \code{VARCHAR(16) NOT NULL} & info \textbar{} warning \textbar{} critical \\
+\code{value} & \code{DOUBLE PRECISION} & Фактическое значение \\
+\code{threshold} & \code{DOUBLE PRECISION} & Превышенный порог \\
+\code{message} & \code{TEXT} & Текст алерта \\
+\code{acknowledged} & \code{BOOLEAN DEFAULT FALSE} & Подтверждён ли \\
+\code{annotation} & \code{TEXT} & Отметка события (аннотация) \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.3em}
+\noindent Индекс: \code{(loco\_id, ts DESC, severity)}.
+
+\subsubsection*{Таблица \code{loco\_config}}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\code{loco\_type} & \code{VARCHAR(16) PK} & Тип локомотива \\
+\code{config} & \code{JSONB NOT NULL} & Параметры, диапазоны, веса, подсистемы \\
+\code{updated\_at} & \code{TIMESTAMPTZ} & Время последнего обновления \\
+\bottomrule
+\end{tabularx}
+
+\subsubsection*{Таблица \code{users}}
+
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\code{id} & \code{SERIAL PK} & ID пользователя \\
+\code{username} & \code{VARCHAR(64) UNIQUE} & Логин \\
+\code{password\_hash} & \code{VARCHAR(256)} & Хеш пароля (bcrypt) \\
+\code{role} & \code{VARCHAR(16)} & admin \textbar{} dispatcher \textbar{} cabin \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Retention и агрегация}
+
+\begin{itemize}[nosep]
+  \item Retention сырых данных: \textbf{72 часа} (настраивается через ENV).
+  \item Для replay --- прямые запросы к hypertable по временному диапазону.
+  \item Опционально: continuous aggregate --- 1-минутные средние для графиков с большим окном.
+\end{itemize}
+
+
+% =========================================================================
+%  10. HEALTH INDEX — МАТЕМАТИЧЕСКАЯ МОДЕЛЬ
+% =========================================================================
+\section{Индекс здоровья --- математическая модель}
+\label{sec:health-index}
+
+\subsection{Обзор}
+
+Health Index (HI) --- единый числовой показатель $\in [0, 100]$, отражающий общее состояние локомотива. Расчёт \textbf{иерархический}:
+
+\[
+\text{Параметры} \;\xrightarrow{\text{нормализация}}\; \text{Подсистемы} \;\xrightarrow{\text{взвешивание}}\; \text{Глобальный HI}
+\]
+
+Индекс учитывает: текущие (сглаженные) значения, тренды, активные диагностические сигналы и штрафы за алерты.
+
+\subsection{Функция нормализации}
+
+Для каждого параметра $p$ с текущим сглаженным значением $v$ определяется нормализованная оценка $\mathrm{norm}(v, p) \in [0, 1]$:
+
+\[
+\mathrm{norm}(v, p) = \begin{cases}
+  1.0, & \text{если } v \in [\text{safe\_low}_p,\; \text{safe\_high}_p] \\[6pt]
+  \displaystyle 1 - \frac{|v - s_{\text{near}}|}{t_{\text{bound}} - s_{\text{near}}}, & \text{если } v \in \text{warning zone} \\[10pt]
+  0.0, & \text{если } v \notin [\text{crit\_low}_p,\; \text{crit\_high}_p]
+\end{cases}
+\]
+
+где $s_{\text{near}}$ --- ближайшая граница safe-зоны, $t_{\text{bound}}$ --- соответствующая граница critical-зоны.
+
+Особые случаи: если $v = \mathrm{NaN}$ (пропуск данных $> 5$\,с), то $\mathrm{norm} = 0$ (Critical).
+
+Конкретные значения \code{safe\_low}, \code{safe\_high}, \code{warn}, \code{crit} для каждого параметра --- \textit{см.\,\code{Locomotive\_Metrics\_Reference.md}}.
+
+\subsection{Штрафы за алерты}
+\label{sec:alert-penalty}
+
+Активные алерты накладывают мультипликативный штраф на оценку затронутой подсистемы:
+
+\[
+\mathrm{penalty}(\text{sub}) = \max\!\Big(0.5,\;\; 1 - 0.1 \cdot N_{\text{crit}} - 0.05 \cdot N_{\text{warn}}\Big)
+\]
+
+где $N_{\text{crit}}$ --- количество активных critical-алертов в подсистеме, $N_{\text{warn}}$ --- warning-алертов. Минимальный множитель --- 0.5 (максимальный штраф --- 50\,\%).
+
+\subsection{Оценка подсистемы}
+
+Каждый тип локомотива определяет набор подсистем (например, для KZ8A: Тяга, Электрика, Охлаждение, Тормоза, Вспомогательные). Оценка подсистемы $\text{sub}$:
+
+\[
+S_{\text{sub}} = \mathrm{penalty}(\text{sub}) \cdot \frac{\displaystyle\sum_{p \in \text{sub}} w_p \cdot \mathrm{norm}(v_p, p)}{\displaystyle\sum_{p \in \text{sub}} w_p}
+\]
+
+где $w_p$ --- вес параметра $p$ внутри подсистемы (из конфигурации). Конкретные подсистемы и веса --- \textit{см.\,\code{Locomotive\_Metrics\_Reference.md}}.
+
+\subsection{Глобальный Health Index}
+
+\[
+\mathrm{HI} = \left\lfloor \frac{\displaystyle\sum_{\text{sub}} W_{\text{sub}} \cdot S_{\text{sub}}}{\displaystyle\sum_{\text{sub}} W_{\text{sub}}} \cdot 100 \right\rceil
+\]
+
+где $W_{\text{sub}}$ --- вес подсистемы в глобальном индексе. Результат округляется до 1 знака после запятой и ограничивается $[0, 100]$.
+
+\subsection{Категоризация}
+
+\begin{tabularx}{\textwidth}{C{2.5cm} C{2.5cm} C{2cm} X}
+\toprule
+\textbf{Диапазон} & \textbf{Статус} & \textbf{Цвет} & \textbf{Описание} \\
+\midrule
+70 -- 100 & Normal & \textcolor{statusgreen}{\rule{1cm}{0.4cm}} & Все системы в безопасных диапазонах \\
+40 -- 69 & Attention & \textcolor{statusyellow}{\rule{1cm}{0.4cm}} & Один или более параметров в warning-зоне \\
+0 -- 39 & Critical & \textcolor{statusred}{\rule{1cm}{0.4cm}} & Требуется немедленное вмешательство \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Объяснимость --- Top-5 факторов}
+
+После вычисления HI определяются 5 параметров с наибольшим негативным вкладом:
+
+\[
+\mathrm{contribution}(p) = W_{\text{sub}(p)} \cdot w_p \cdot \big(1 - \mathrm{norm}(v_p, p)\big)
+\]
+
+Сортировка по убыванию, берутся top-5. Каждая запись содержит: название параметра, подсистему, текущее значение, безопасный диапазон, величину вклада, рекомендуемое действие.
+
+\subsection{Частота и производительность}
+
+HI пересчитывается на каждый тик телеметрии (1\,Гц). Целевое время вычисления: $< 50$\,мс на один локомотив. Результаты кешируются в оперативной памяти и записываются в \code{health\_index\_history}.
+
+
+% =========================================================================
+%  11. СПЕЦИФИКАЦИЯ REST API
+% =========================================================================
+\section{Спецификация REST API}
+\label{sec:api}
+
+\subsection{Общие соглашения}
+
+\begin{itemize}[nosep]
+  \item Base URL: \code{/api/v1/}
+  \item Content-Type: \code{application/json}
+  \item Аутентификация: Bearer JWT в заголовке \code{Authorization}
+  \item Ошибки: \code{\{"error": "code", "message": "...", "detail": \{...\}\}}
+  \item Пагинация: \code{?limit=N\&offset=M}, заголовок ответа \code{X-Total-Count}
+  \item Timestamps: ISO\,8601 с timezone (UTC)
+\end{itemize}
+
+\subsection{Authentication}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+POST & \code{/auth/login} & Аутентификация. Body: \code{\{username, password\}}. Ответ: \code{\{token, role, expires\_at\}} & --- \\
+GET & \code{/auth/me} & Текущий пользователь: \code{\{id, username, role\}} & Required \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Telemetry}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/telemetry/\{loco\_id\}/latest} & Последние значения всех параметров & dispatcher+ \\
+GET & \code{/telemetry/\{loco\_id\}/history} & Исторические данные. Query: \code{parameter, from, to, interval} & dispatcher+ \\
+POST & \code{/telemetry/ingest} & Ручная отправка телеметрии (тестирование) & admin \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Health Index}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/health-index/\{loco\_id\}/current} & Текущий HI + top factors + subsystem scores & dispatcher+ \\
+GET & \code{/health-index/\{loco\_id\}/history} & История HI. Query: \code{from, to} & dispatcher+ \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Alerts}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/alerts/\{loco\_id\}} & Список алертов. Query: \code{severity, from, to, limit, offset} & dispatcher+ \\
+PATCH & \code{/alerts/\{id\}/acknowledge} & Подтвердить прочтение алерта & dispatcher+ \\
+PATCH & \code{/alerts/\{id\}/annotate} & Добавить отметку события. Body: \code{\{text\}} & dispatcher+ \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Configuration}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/config/\{loco\_type\}} & Конфигурация локомотива (параметры, пороги, веса) & dispatcher+ \\
+PUT & \code{/config/\{loco\_type\}} & Обновить конфигурацию & admin \\
+GET & \code{/config/subsystems/\{loco\_type\}} & Список подсистем и их веса & dispatcher+ \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Simulator Control}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+POST & \code{/simulator/start} & Запустить симуляцию & admin \\
+POST & \code{/simulator/stop} & Остановить симуляцию & admin \\
+POST & \code{/simulator/scenario} & Сменить сценарий. Body: \code{\{scenario\}} & admin \\
+GET & \code{/simulator/status} & Текущий статус симулятора & admin \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Export}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/export/\{loco\_id\}} & Экспорт отчёта. Query: \code{format=pdf|csv, from, to} & dispatcher+ \\
+\bottomrule
+\end{tabularx}
+
+\subsection{System}
+
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Метод} & \textbf{Путь} & \textbf{Описание} & \textbf{Auth} \\
+\midrule
+GET & \code{/health} & Health-check (DB, queue, uptime) & --- \\
+GET & \code{/docs} & Swagger UI (авто-генерация) & --- \\
+\bottomrule
+\end{tabularx}
+
+\subsection{WebSocket Protocol}
+
+\textbf{Endpoint:} \code{ws://host/ws/telemetry/\{loco\_id\}}
+
+\begin{enumerate}[nosep]
+  \item Клиент подключается с JWT-токеном как query parameter (\code{?token=...}).
+  \item Сервер аутентифицирует и начинает стриминг.
+  \item Сервер отправляет JSON-фреймы с частотой 1\,Гц:
+\end{enumerate}
+
+\begin{lstlisting}
+{
+  "type": "telemetry_update",
+  "data": {
+    "ts": "2026-04-04T12:00:00.000Z",
+    "loco_id": "KZ8A-001",
+    "parameters": { "speed_kmh": 87.3, ... },
+    "health_index": { "score": 82.5, "status": "Normal", ... },
+    "new_alerts": [ ... ]
+  }
+}
+\end{lstlisting}
+
+\begin{enumerate}[nosep, start=4]
+  \item Клиент может отправить: \code{\{"type": "ping"\}}, сервер ответит \code{\{"type": "pong"\}}.
+  \item При отключении клиент реализует \textbf{exponential backoff}: 1\,с $\to$ 2\,с $\to$ 4\,с $\to$ 8\,с $\to$ max 30\,с.
+  \item Визуальная индикация <<нет связи>> на UI в течение 3\,с после потери соединения.
+  \item При реконнекте сервер сначала отправляет snapshot текущего состояния, затем возобновляет стриминг.
+\end{enumerate}
+
+
+% =========================================================================
+%  12. ОПИСАНИЕ ЭКРАННЫХ ФОРМ (WIREFRAMES)
+% =========================================================================
+\section{Описание экранных форм}
+
+\subsection{Login Screen}
+
+Центрированная карточка на нейтральном фоне. Логотип проекта сверху, поля <<Username>> и <<Password>>, кнопка <<Войти>>. Toast-уведомление при ошибке. Автоматический редирект на Dashboard при наличии валидного токена. Минимальный дизайн, без sidebar.
+
+\subsection{Main Dashboard}
+
+\begin{itemize}[nosep]
+  \item \textbf{Header} (full-width): логотип, селектор локомотива (dropdown), текущий пользователь + badge роли, переключатель темы, кнопка Logout.
+  \item \textbf{Основная область}: Health Index hero-виджет (круговой gauge, число, текст статуса + цвет). Сетка панелей подсистем (Скорость, Топливо/Энергия, Давления/Температуры, Электрика). Каждая панель: мини-gauge + текущее значение + стрелка тренда ($\uparrow\downarrow\rightarrow$).
+  \item \textbf{Боковая/дополнительная область}: список Top-5 факторов (параметр, bar вклада, значение vs порог). Лента алертов (scroll, последние 10). Рекомендации (текстовый список).
+  \item \textbf{Нижняя полоса}: мини-график HI за последние 5\,мин, индикатор соединения.
+\end{itemize}
+
+\subsection{Alerts Panel}
+
+Полноширинная таблица: столбцы --- Время, Параметр, Severity (иконка + текст), Значение, Порог, Статус, Аннотация. Над таблицей --- фильтры (severity checkboxes, date range picker, селектор локомотива). Клик по строке --- expand с деталями + текстовое поле аннотации. Пагинация внизу.
+
+\subsection{Route Map}
+
+Карта занимает основную часть экрана. Floating overlay: текущая скорость, координаты, ближайшая станция. Линия маршрута с цветовой кодировкой (зелёный/жёлтый/красный по HI). Маркер-иконка локомотива. Зоны ограничения скорости --- dashed overlay.
+
+\subsection{Trends / Charts}
+
+Панель выбора диапазона: кнопки-пресеты (5\,мин, 10\,мин, 15\,мин) + произвольный picker. Сетка графиков (настраиваемые метрики, количество и расположение --- на усмотрение дизайнера). Каждый график: line chart, tooltip, авто-скейлинг Y, zoom через drag-select. Кнопка <<Добавить метрику>>. Переключатель live/pause.
+
+\subsection{Replay / History}
+
+Timeline-скраббер (full-width) с кнопками Play / Pause / Speed (1$\times$, 2$\times$, 5$\times$). Под скраббером --- тот же layout, что и Dashboard, но данные управляются позицией курсора. Графики, карта, алерты, HI --- всё синхронизировано со скраббером.
+
+\subsection{Admin Settings}
+
+Tabs-интерфейс:
+\begin{itemize}[nosep]
+  \item \textbf{Пороги:} таблица per locomotive type. Строки = параметры, столбцы = safe\_low, safe\_high, warn\_low, warn\_high, crit\_low, crit\_high, weight. Inline-editing с валидацией.
+  \item \textbf{Симуляция:} кнопки Start/Stop, dropdown сценариев (normal, overheat, fault, highload, connection\_loss), индикатор текущего статуса.
+  \item \textbf{Пользователи:} простая CRUD-таблица (username, role, reset password).
+\end{itemize}
+
+
+% =========================================================================
+%  13. СИМУЛЯТОР ТЕЛЕМЕТРИИ
+% =========================================================================
+\section{Симулятор телеметрии}
+
+\subsection{Normal Operation Mode}
+
+Random walk вокруг номинальных значений для каждого параметра, ограниченный safe-диапазонами. Гауссов шум с настраиваемой $\sigma$. Частота эмиссии --- 1\,Гц на локомотив.
+
+\subsection{Аварийные сценарии (минимум 3)}
+
+\begin{tabularx}{\textwidth}{C{0.6cm} l C{1.5cm} X}
+\toprule
+\textbf{\#} & \textbf{Сценарий} & \textbf{Длительность} & \textbf{Описание} \\
+\midrule
+1 & Постепенный перегрев & 2\,мин & Температура тягового двигателя дрейфует вверх, проходя warning $\to$ critical зоны. \\
+2 & Внезапный электрический сбой & мгновенно & Напряжение падает до 0 за 1 тик. Множественные алерты. \\
+3 & Highload burst & 30\,сек & Частота сообщений увеличивается до $\times$10. Тест backpressure. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Connection Loss}
+
+Симулятор прекращает отправку на 10--15 секунд, затем возобновляет. Frontend должен отобразить <<нет связи>> и корректно восстановиться.
+
+\subsection{Конфигурация}
+
+Сценарии описываются в YAML/JSON файлах. Каждый сценарий определяет: затронутые параметры, тип изменения (drift/step), скорость, длительность, целевые значения.
+
+
+% =========================================================================
+%  14. НЕФУНКЦИОНАЛЬНЫЕ ТРЕБОВАНИЯ
+% =========================================================================
+\section{Нефункциональные требования}
+
+\subsection{Производительность / Latency}
+
+\begin{itemize}[nosep]
+  \item End-to-end latency (от эмиссии события до видимого обновления UI): $< 500$\,мс.
+  \item Вычисление Health Index: $< 50$\,мс на локомотив на тик.
+  \item Время ответа API (исторические запросы, 1-часовой диапазон): $< 200$\,мс.
+  \item Frontend-рендеринг: 60\,fps в нормальном режиме.
+\end{itemize}
+
+\subsection{Highload / Burst}
+
+\begin{itemize}[nosep]
+  \item Система выдерживает $\times$10 burst (10\,Гц вместо 1\,Гц) без аварийной остановки.
+  \item Очередь буферизирует всплески; backend обрабатывает на устойчивой скорости.
+  \item Frontend может снизить частоту рендеринга до 2--4\,fps при burst, но \textbf{не должен зависать}.
+  \item Graceful degradation: при отставании пропускаются промежуточные фреймы, всегда отображается последнее состояние.
+\end{itemize}
+
+\subsection{Отказоустойчивость}
+
+\begin{itemize}[nosep]
+  \item WebSocket reconnect с exponential backoff (1, 2, 4, 8, max 30\,с).
+  \item Визуальная индикация <<нет связи>> на frontend в течение 3\,с после disconnect.
+  \item Backend: при временной недоступности БД --- отдача данных из in-memory кеша до 30\,с.
+  \item Нет потери данных в очереди при перезапуске backend (Redis persistence или graceful shutdown asyncio.Queue).
+\end{itemize}
+
+\subsection{Безопасность}
+
+\begin{itemize}[nosep]
+  \item JWT-аутентификация для всех API endpoints (кроме \code{/health}, \code{/docs}).
+  \item Role-based access control: Admin --- полный доступ, Dispatcher --- read-only, Cabin --- read-only subset.
+  \item Секреты (пароль БД, JWT secret) --- \textbf{только в переменных окружения}, никогда в коде.
+  \item Все данные --- mock/обезличенные.
+\end{itemize}
+
+\subsection{Документация API}
+
+\begin{itemize}[nosep]
+  \item Авто-генерируемая документация OpenAPI\,3.0 / Swagger UI на \code{/docs}.
+  \item Все endpoints задокументированы: request/response schemas, примеры, коды ошибок.
+\end{itemize}
+
+\subsection{Инфраструктура}
+
+\begin{itemize}[nosep]
+  \item \textbf{Docker Compose} --- единственный способ запуска. \code{docker-compose up} поднимает все сервисы: simulator, backend, frontend, TimescaleDB, Redis.
+  \item Конфигурация через \code{.env} файл с документированными переменными.
+  \item \code{.env.example} в репозитории с описанием всех переменных.
+  \item \code{README.md} с пошаговыми инструкциями запуска.
+\end{itemize}
+
+\subsection{Логи и наблюдаемость}
+
+\begin{itemize}[nosep]
+  \item Структурированные JSON-логи от всех backend-сервисов (\code{structlog}).
+  \item Уровни логирования: DEBUG, INFO, WARNING, ERROR.
+  \item Request logging с \code{trace\_id} для корреляции.
+  \item Endpoint \code{/health} --- статус сервиса, связность БД, глубина очереди, uptime.
+  \item Метрики: активные WebSocket-соединения, msg/sec, queue depth, HI computation time.
+\end{itemize}
+
+
+% =========================================================================
+%  15. ПЛАН ТЕСТИРОВАНИЯ
+% =========================================================================
+\section{План тестирования}
+
+\subsection{Unit Tests}
+
+\begin{longtable}{l L{3cm} L{4.5cm} L{4.5cm}}
+\toprule
+\textbf{ID} & \textbf{Компонент} & \textbf{Тест} & \textbf{Ожидаемый результат} \\
+\midrule
+\endhead
+UT-01 & HI Engine & Нормализация: значение в safe-зоне & Возвращает 1.0 \\
+UT-02 & HI Engine & Нормализация: значение в warning-зоне & Пропорциональная оценка $(0, 1)$ \\
+UT-03 & HI Engine & Нормализация: значение за critical & Возвращает 0.0 \\
+UT-04 & HI Engine & Нормализация: значение NaN & Возвращает 0.0 \\
+UT-05 & HI Engine & Штраф за алерты & Корректный мультипликативный штраф \\
+UT-06 & HI Engine & Top-5 факторов: порядок & По убыванию contribution \\
+UT-07 & HI Engine & Полный расчёт HI (профиль KZ8A) & Результат $\in [0, 100]$ \\
+UT-08 & Ingest & Дедупликация duplicate timestamp & Второе сообщение отброшено \\
+UT-09 & Ingest & Отклонение выброса & Значение вне физического диапазона отвергнуто \\
+UT-10 & Ingest & EMA-сглаживание & Сглаженное значение соответствует $\alpha = 0.3$ \\
+\bottomrule
+\end{longtable}
+
+\subsection{Integration Tests}
+
+\begin{longtable}{l L{3.5cm} L{4cm} L{4cm}}
+\toprule
+\textbf{ID} & \textbf{Тест} & \textbf{Шаги} & \textbf{Ожидаемый результат} \\
+\midrule
+\endhead
+IT-01 & Pipeline end-to-end & POST телеметрию $\to$ GET history & Данные в БД в течение 1\,с \\
+IT-02 & WebSocket соединение & Подключиться, получить данные & JSON-фреймы с частотой 1\,Гц \\
+IT-03 & WebSocket reconnect & Разорвать соединение, ждать & Клиент переподключается с backoff \\
+IT-04 & Auth flow & Login с корректными creds & JWT-токен, доступ к protected endpoint \\
+IT-05 & Auth rejection & Запрос без токена & Ответ \code{401 Unauthorized} \\
+IT-06 & Role enforcement & Dispatcher $\to$ PUT config & Ответ \code{403 Forbidden} \\
+IT-07 & Alert generation & Отправить значение выше порога & Алерт создан, отправлен через WS \\
+IT-08 & Config update $\to$ HI & Изменить порог, проверить HI & HI пересчитан с новыми порогами \\
+\bottomrule
+\end{longtable}
+
+\subsection{Scenario / E2E Tests}
+
+\begin{longtable}{l L{3.5cm} C{1.5cm} L{5.5cm}}
+\toprule
+\textbf{ID} & \textbf{Сценарий} & \textbf{Время} & \textbf{Критерий успеха} \\
+\midrule
+\endhead
+ST-01 & Normal operation & 5\,мин & Dashboard работает, HI стабильно 80--95, нет ложных алертов \\
+ST-02 & Постепенный перегрев & 3\,мин & HI плавно снижается, алерты появляются, top factors показывают температуру \\
+ST-03 & Внезапный сбой & 1\,мин & HI резко падает, статус Critical, множественные алерты, рекомендации \\
+ST-04 & Highload burst $\times$10 & 1\,мин & UI не зависает, данные eventually consistent \\
+ST-05 & Connection loss + recovery & 2\,мин & <<Нет связи>> через 3\,с, авто-reconnect, данные возобновляются \\
+ST-06 & Replay mode & 2\,мин & Историческое воспроизведение с синхронизацией графиков/карты/алертов \\
+ST-07 & Report export & 1\,мин & PDF/CSV скачивается с корректными данными \\
+ST-08 & Переключение темы & 30\,с & Все экраны корректно отображаются в обеих темах \\
+ST-09 & Смена типа локомотива & 1\,мин & Переключение KZ8A $\leftrightarrow$ ТЭ33А, параметры обновляются \\
+\bottomrule
+\end{longtable}
+
+\subsection{Performance Tests}
+
+\begin{tabularx}{\textwidth}{l L{5cm} l l}
+\toprule
+\textbf{ID} & \textbf{Тест} & \textbf{Целевое значение} & \textbf{Инструмент} \\
+\midrule
+PT-01 & WebSocket latency (end-to-end) & $< 500$\,мс & Сравнение timestamp \\
+PT-02 & API response (history, 1\,ч) & $< 200$\,мс & cURL timing \\
+PT-03 & Burst handling ($\times$10, 30\,с) & Без crash & Simulator burst mode \\
+\bottomrule
+\end{tabularx}
+
+
+% =========================================================================
+%  16. ФОРМАТ СДАЧИ И ДЕМОНСТРАЦИЯ
+% =========================================================================
+\section{Формат сдачи и демонстрация}
+
+\subsection{Git-репозиторий}
+
+\begin{itemize}[nosep]
+  \item Публичный или общий Git-репозиторий.
+  \item Чистая история (без секретов в коммитах).
+  \item \code{README.md}: описание проекта, обзор архитектуры, prerequisites (Docker, docker-compose), пошаговая инструкция запуска (\code{docker-compose up}), учётные данные для демо-входа, скриншоты/GIF работающего приложения.
+  \item \code{.env.example}: все необходимые переменные окружения с документацией.
+\end{itemize}
+
+\subsection{Презентация}
+
+10--12 слайдов:
+\begin{enumerate}[nosep]
+  \item Постановка проблемы
+  \item Архитектурная диаграмма
+  \item Разбор формулы Health Index
+  \item Обоснование выбора стека
+  \item Демо-скриншоты ключевых экранов
+  \item Вызовы и решения
+\end{enumerate}
+
+Формат: PDF или Google Slides.
+
+\subsection{Демонстрация}
+
+Live-демо или предзаписанное видео (3--5 минут), демонстрирующее:
+
+\begin{itemize}[nosep]
+  \item Нормальный режим работы с live-dashboard.
+  \item Аварийный сценарий с деградацией HI и алертами.
+  \item Highload burst ($\times$10).
+  \item Потеря и восстановление соединения.
+  \item Переключение темы.
+  \item Replay mode.
+  \item Смена типа локомотива.
+\end{itemize}
+
+\subsection{Архитектурная диаграмма}
+
+Отдельный файл (PNG/SVG) в \code{docs/architecture.png}. Содержит все компоненты, потоки данных, порты и протоколы (см.~раздел~\ref{sec:arch-diagram}).
+
+
+% =========================================================================
+%  17. DEFINITION OF DONE
+% =========================================================================
+\section{Definition of Done}
+
+\begin{enumerate}[nosep]
+  \item Все сервисы поднимаются через единый \code{docker-compose up}.
+  \item KZ8A и ТЭ33А поддерживаются через отдельные конфигурационные профили (без изменения кода).
+  \item Swagger/OpenAPI документация доступна на \code{/docs}.
+  \item Frontend отображает: dashboard с HI, панели узлов, карту маршрута, trends, replay.
+  \item Светлая и тёмная тема полностью функциональны.
+  \item Health Index считается в реальном времени с объяснимостью (top-5 факторов).
+  \item Минимум 3 демо-сценария подготовлены (normal, fault, highload/connection loss).
+  \item WebSocket reconnect с backoff + визуальная индикация <<нет связи>>.
+  \item JWT-аутентификация с role-based access control.
+  \item Endpoint \code{/health} возвращает статус сервиса.
+  \item Структурированное JSON-логирование включено.
+  \item Экспорт отчёта (PDF/CSV) функционален.
+  \item Отметки событий (аннотации к алертам) реализованы.
+  \item Презентация (10--12 слайдов) с архитектурой и формулой HI.
+  \item \code{README.md} с полными инструкциями запуска.
+\end{enumerate}
+
+
+% =========================================================================
+%  18. ГЛОССАРИЙ
+% =========================================================================
+\section{Глоссарий}
+
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Термин} & \textbf{Определение} \\
+\midrule
+HI & Health Index --- интегральный показатель состояния локомотива (0--100) \\
+EMA & Exponential Moving Average --- экспоненциальное скользящее среднее \\
+KZ8A & Электровоз казахстанского производства (переменный ток 25\,кВ) \\
+ТЭ33А & Тепловоз с дизель-электрической тягой (GE Evolution) \\
+NFR & Non-Functional Requirements --- нефункциональные требования \\
+MVP & Minimum Viable Product --- минимально жизнеспособный продукт \\
+SSE & Server-Sent Events --- односторонний серверный push через HTTP \\
+WebSocket & Двунаправленный протокол связи поверх TCP \\
+TimescaleDB & Расширение PostgreSQL для работы с time-series данными \\
+Hypertable & Таблица TimescaleDB с автоматическим партиционированием по времени \\
+JWT & JSON Web Token --- стандарт аутентификации на основе подписанных токенов \\
+WCAG & Web Content Accessibility Guidelines --- стандарт доступности веб-контента \\
+RBAC & Role-Based Access Control --- управление доступом на основе ролей \\
+\bottomrule
+\end{tabularx}
+
+
+% =========================================================================
+%  19. ПРИЛОЖЕНИЯ
+% =========================================================================
+\section{Приложения}
+
+\subsection*{Приложение A. Параметры локомотивов}
+
+Полная таблица телеметрических параметров для KZ8A и ТЭ33А (названия, единицы измерения, подсистемы, safe/warn/crit диапазоны, веса) --- \textit{см.\,\code{Locomotive\_Metrics\_Reference.md}}.
+
+\subsection*{Приложение B. Формат JSON-сообщения телеметрии}
+
+\begin{lstlisting}
+{
+  "loco_id": "KZ8A-001",
+  "loco_type": "KZ8A",
+  "ts": "2026-04-04T12:00:00.000Z",
+  "parameters": {
+    "speed_kmh": 87.3,
+    "traction_motor_temp_c": 142.5,
+    "voltage_v": 24800,
+    "current_a": 350,
+    "brake_pressure_bar": 4.8,
+    "oil_temp_c": 78.2,
+    "coolant_temp_c": 82.0,
+    "fuel_level_pct": 65.0
+  }
+}
+\end{lstlisting}
+
+\subsection*{Приложение C. Формат WebSocket фрейма}
+
+\begin{lstlisting}
+{
+  "type": "telemetry_update",
+  "data": {
+    "ts": "2026-04-04T12:00:01.000Z",
+    "loco_id": "KZ8A-001",
+    "parameters": { ... },
+    "health_index": {
+      "score": 82.5,
+      "status": "Normal",
+      "top_factors": [
+        {
+          "parameter": "traction_motor_temp_c",
+          "subsystem": "Traction",
+          "value": 142.5,
+          "safe_range": [80, 130],
+          "contribution": 0.15,
+          "action": "Monitor temperature trend"
+        }
+      ],
+      "subsystem_scores": {
+        "Traction": 0.78,
+        "Electrical": 0.95,
+        "Cooling": 0.88,
+        "Braking": 0.92
+      }
+    },
+    "new_alerts": []
+  }
+}
+\end{lstlisting}
+
+\subsection*{Приложение D. Docker Compose --- обзор сервисов}
+
+\begin{tabularx}{\textwidth}{l l l X}
+\toprule
+\textbf{Сервис} & \textbf{Образ} & \textbf{Порт} & \textbf{Зависимости} \\
+\midrule
+\code{frontend} & Node 20 + Next.js & 3000 & backend \\
+\code{backend} & Python 3.11 + FastAPI & 8000 & db, redis \\
+\code{simulator} & Python 3.11 & --- & redis \\
+\code{db} & timescale/timescaledb & 5432 & --- \\
+\code{redis} & redis:7-alpine & 6379 & --- \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Приложение E. Цветовая палитра}
+
+Конкретные цвета выбираются командой дизайна. Общие требования к палитре:
+
+\begin{itemize}[nosep]
+  \item Поддержка светлой и тёмной темы с достаточным контрастом (WCAG~AA).
+  \item Семантические цвета статусов: зелёный (Normal), жёлтый/оранжевый (Attention), красный (Critical) --- должны быть интуитивно различимы.
+  \item Единый акцентный цвет для интерактивных элементов.
+  \item Иерархия текста: primary и secondary цвета для основного и вспомогательного текста.
+  \item Нейтральные фоновые и поверхностные цвета для карточек, панелей и разделителей.
+\end{itemize}
+
+
+\end{document}
