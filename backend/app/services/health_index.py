@@ -80,10 +80,10 @@ def normalize(value: float | None, param_cfg: dict) -> float:
 
 def calculate_penalty(n_crit: int, n_warn: int) -> float:
     """
-    Alert penalty multiplier per ТЗ section 10.3.
-    penalty = max(0.5, 1 - 0.1 * N_crit - 0.05 * N_warn)
+    Alert penalty multiplier per ТЗ section 10.3 (tuned).
+    Stronger penalties: 0.15 per critical, floor lowered to 0.1.
     """
-    return max(0.5, 1.0 - 0.1 * n_crit - 0.05 * n_warn)
+    return max(0.1, 1.0 - 0.15 * n_crit - 0.05 * n_warn)
 
 
 def calculate_subsystem_score(
@@ -243,6 +243,18 @@ async def compute_health_index(
         )
 
     score = calculate_global_hi(subsystem_scores, subsystem_weights)
+
+    # Global critical penalty: if any parameter is beyond critical limits,
+    # multiply HI to ensure it drops proportionally to number of failures
+    total_crit_params = sum(
+        1 for sub_cfg in config.get("subsystems", {}).values()
+        for p_name, p_cfg in sub_cfg.get("parameters", {}).items()
+        if normalize(smoothed_params.get(p_name), p_cfg) == 0.0
+    )
+    if total_crit_params > 0:
+        crit_factor = max(0.3, 1.0 - 0.15 * total_crit_params)
+        score = round(max(0.0, min(100.0, score * crit_factor)), 1)
+
     status = categorize(score)
     top_factors = get_top_factors(smoothed_params, config)
 

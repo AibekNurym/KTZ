@@ -30,6 +30,9 @@ def _ensure_font():
 from app.auth.jwt import get_current_user
 from app.db.connection import get_pool
 
+# Astana timezone UTC+5
+TZ_ASTANA = timezone(timedelta(hours=5))
+
 router = APIRouter(prefix="/api/v1/export", tags=["Export"])
 
 # ── i18n for export files ──
@@ -198,20 +201,24 @@ def _generate_csv(loco_id, from_ts, to_ts, hi_rows, alert_rows, lang="ru"):
     output.write("\ufeff")
     writer = csv.writer(output)
 
+    from_local = from_ts.astimezone(TZ_ASTANA)
+    to_local = to_ts.astimezone(TZ_ASTANA)
     writer.writerow([t("report_title"), loco_id])
-    writer.writerow([t("from"), from_ts.isoformat(), t("to"), to_ts.isoformat()])
+    writer.writerow([t("from"), from_local.isoformat(), t("to"), to_local.isoformat()])
     writer.writerow([])
 
     writer.writerow([t("hi_history")])
     writer.writerow([t("timestamp"), t("score"), t("status")])
     for r in hi_rows:
-        writer.writerow([r["ts"].isoformat(), r["score"], t(r["status"])])
+        ts_local = r["ts"].astimezone(TZ_ASTANA) if r["ts"].tzinfo else r["ts"]
+        writer.writerow([ts_local.isoformat(), r["score"], t(r["status"])])
 
     writer.writerow([])
     writer.writerow([t("alerts_section")])
     writer.writerow([t("timestamp"), t("parameter"), t("severity"), t("value"), t("threshold")])
     for r in alert_rows:
-        writer.writerow([r["ts"].isoformat(), t(r["parameter"]), t(r["severity"]), r["value"], r["threshold"]])
+        ts_local = r["ts"].astimezone(TZ_ASTANA) if r["ts"].tzinfo else r["ts"]
+        writer.writerow([ts_local.isoformat(), t(r["parameter"]), t(r["severity"]), r["value"], r["threshold"]])
 
     output.seek(0)
     return StreamingResponse(
@@ -240,8 +247,10 @@ def _generate_pdf(loco_id, from_ts, to_ts, hi_min, hi_avg, hi_max, alert_rows, l
 
     # Title
     elements.append(Paragraph(f"{t('report_title')} — {loco_id}", s_title))
+    from_local = from_ts.astimezone(TZ_ASTANA)
+    to_local = to_ts.astimezone(TZ_ASTANA)
     elements.append(Paragraph(
-        f"{t('period')}: {from_ts.strftime('%Y-%m-%d %H:%M')} — {to_ts.strftime('%Y-%m-%d %H:%M')} UTC",
+        f"{t('period')}: {from_local.strftime('%Y-%m-%d %H:%M')} — {to_local.strftime('%Y-%m-%d %H:%M')} (UTC+5)",
         s_normal,
     ))
     elements.append(Spacer(1, 10*mm))
@@ -271,14 +280,15 @@ def _generate_pdf(loco_id, from_ts, to_ts, hi_min, hi_avg, hi_max, alert_rows, l
     if alert_rows:
         alert_data = [[t("timestamp"), t("parameter"), t("severity"), t("value"), t("threshold")]]
         for r in alert_rows[:30]:
+            ts_local = r["ts"].astimezone(TZ_ASTANA) if r["ts"].tzinfo else r["ts"]
             alert_data.append([
-                r["ts"].strftime("%H:%M:%S"),
+                ts_local.strftime("%H:%M:%S"),
                 t(r["parameter"]),
                 t(r["severity"]),
                 f"{r['value']:.1f}",
                 f"{r['threshold']:.1f}",
             ])
-        a_table = Table(alert_data, colWidths=[25*mm, 50*mm, 22*mm, 22*mm, 22*mm])
+        a_table = Table(alert_data, colWidths=[22*mm, 40*mm, 35*mm, 22*mm, 22*mm])
         a_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#27272a")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),

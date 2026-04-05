@@ -38,9 +38,14 @@ export function useWebSocket() {
     };
 
     ws.onmessage = (event) => {
+      // Ignore messages from stale connections
+      if (wsRef.current !== ws) return;
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === "telemetry_update") {
+          // Verify loco_id matches current selection
+          const currentLocoId = useTelemetryStore.getState().locoId;
+          if (msg.data.loco_id && msg.data.loco_id !== currentLocoId) return;
           updateFromWs(msg.data);
         } else if (msg.type === "snapshot") {
           // Initial snapshot on connect
@@ -64,7 +69,7 @@ export function useWebSocket() {
     };
 
     ws.onclose = () => {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || wsRef.current !== ws) return;
       setConnectionStatus("reconnecting");
       scheduleReconnect();
     };

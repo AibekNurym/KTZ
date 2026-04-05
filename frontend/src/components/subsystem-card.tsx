@@ -87,7 +87,7 @@ export function SubsystemCard({ name, score, parameters }: SubsystemCardProps) {
   const entries = Object.entries(parameters).slice(0, 4);
 
   return (
-    <div className="bg-stone-50 dark:bg-zinc-900/60 rounded-2xl border border-stone-200/80 dark:border-zinc-800 p-4 flex flex-col h-full">
+    <div className="bg-stone-50 dark:bg-zinc-900/60 rounded-2xl border border-stone-200/80 dark:border-zinc-800 p-4 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-base font-semibold text-zinc-600 dark:text-zinc-400">
@@ -107,7 +107,7 @@ export function SubsystemCard({ name, score, parameters }: SubsystemCardProps) {
       </div>
 
       {/* Parameters */}
-      <div className="space-y-1 flex-1">
+      <div className="space-y-1 flex-1 min-h-0 overflow-hidden">
         {entries.map(([key, val]) => (
           <div key={key} className="flex items-center justify-between text-base leading-tight">
             <span className="text-zinc-400 dark:text-zinc-500 truncate mr-2">

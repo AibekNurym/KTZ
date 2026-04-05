@@ -117,7 +117,7 @@ export default function DashboardPage() {
     <div className="flex flex-col h-screen bg-stone-100/60 dark:bg-zinc-950 overflow-hidden">
       <Header />
 
-      <main className="flex-1 p-4 lg:px-6 lg:py-4 relative overflow-y-auto overflow-x-hidden">
+      <main className="flex-1 p-4 lg:px-6 lg:py-4 relative overflow-hidden">
         {isStale && (
           <div className="absolute inset-0 z-40 flex items-start justify-center pt-4 pointer-events-none">
             <div className="pointer-events-auto bg-red-500 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2.5 animate-fade-in-up">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className={`grid grid-rows-[1fr_auto_1fr_auto] h-full gap-3 max-w-[1800px] mx-auto transition-opacity duration-500 ${isStale ? "opacity-40" : "opacity-100"}`}>
+        <div className={`grid grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] h-full gap-3 max-w-[1800px] mx-auto transition-opacity duration-500 ${isStale ? "opacity-40" : "opacity-100"}`}>
           {/* ═══ TOP ROW: Gauge + Factors + Alerts ═══ */}
           <div className="grid grid-cols-12 gap-4 min-h-0">
             {/* Gauge */}
@@ -139,12 +139,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Top Factors */}
-            <div className="col-span-12 lg:col-span-4 bg-stone-50 dark:bg-zinc-900/50 rounded-2xl border border-stone-200/80 dark:border-zinc-800 p-4">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="col-span-12 lg:col-span-4 bg-stone-50 dark:bg-zinc-900/50 rounded-2xl border border-stone-200/80 dark:border-zinc-800 p-4 flex flex-col overflow-hidden">
+              <div className="flex items-center gap-2 mb-3 shrink-0">
                 <TrendingDown className="w-4 h-4 text-zinc-400" />
                 <h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-300">{t("degradation_factors")}</h3>
               </div>
-              <TopFactors />
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <TopFactors />
+              </div>
             </div>
 
             {/* Alerts */}
@@ -174,7 +176,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ BOTTOM: Subsystem Cards ═══ */}
-          <div className="grid grid-cols-5 gap-3 min-h-0">
+          <div className="grid grid-cols-5 gap-3 min-h-0 overflow-hidden">
             {subsystemNames.map((name) => (
               <SubsystemCard
                 key={name}
